@@ -1,52 +1,45 @@
-# EstiloSaaS - Plataforma de Gestão Multi-Empresa para Barbearias 💇‍♂️📊
+# 💈 Site Barbearia & EstiloBot 🤖
 
-O **EstiloSaaS** é uma aplicação completa (Fullstack) projetada sob o modelo SaaS (Software as a Service) multi-empresa. O ecossistema integra um painel administrativo analítico em tempo real com um bot de atendimento inteligente integrado à API do Gemini, permitindo automação de respostas, leitura de histórico de clientes e recomendações dinâmicas baseadas no banco de dados.
+Este é um ecossistema completo para gestão e automação de barbearias, composto por uma plataforma web institucional/administrativa e um assistente virtual inteligente integrado ao WhatsApp.
 
----
+O projeto utiliza inteligência artificial para humanizar o atendimento ao cliente, consultar disponibilidade de horários em tempo real no banco de dados e realizar agendamentos de forma 100% automatizada.
+
+
 
 ## 🚀 Funcionalidades Principais
 
-* **Painel de Business Intelligence (BI):** Dashboards analíticos com métricas críticas de negócios como Faturamento Total, Ticket Médio, Taxa de Retenção de Clientes e gráficos dinâmicos de pico de acessos.
-* **Módulo Multi-Empresa (Multi-Tenant):** Arquitetura de banco de dados preparada para isolar e filtrar relatórios e serviços por ID de empresa dinamicamente.
-* **CRUD de Serviços (Gerenciamento de Cortes):** Interface reativa para cadastro e listagem de serviços integrados diretamente ao banco de dados MySQL.
-* **Atendimento Automatizado (IA):** Engine de Chat no Backend configurada para consuming a API do Gemini, contextualizando o bot com regras de negócio, histórico de visitas do cliente (Corte Habitual vs Último Corte) e envio de anexos de mídia.
+*   **Atendimento Automatizado e Humanizado:** Integração com a API do Gemini para responder clientes de forma personalizada.
+*   **Reconhecimento de Clientes:** Identifica se o cliente é novo ou antigo através do número de WhatsApp cadastrado no banco de dados.
+*   **Histórico e Preferências:** IA sugere cortes baseando-se no corte habitual ou no último serviço realizado pelo cliente.
+*   **Agenda Dinâmica:** Consulta a tabela de agendamentos no MySQL e exibe para o cliente apenas os horários realmente livres para o dia.
+*   **Agendamento Automático:** Interpreta a confirmação do cliente e realiza o `INSERT` da reserva diretamente no banco de dados.
+*   **Envio de Mídia:** Envia imagens de inspiração dos cortes disponíveis através do WhatsApp usando tags inteligentes.
+
+
+## 🛠️ Tecnologias Utilizadas
+
+*   **Backend:** Node.js
+*   **Banco de Dados:** MySQL (Relacional)
+*   **Inteligência Artificial:** Gemini API (`gemini-2.5-flash`)
+*   **Automação de Mensagens:** `whatsapp-web.js` (Puppeteer para espelhamento de sessão)
+*   **Segurança:** `dotenv` para gerenciamento de variáveis de ambiente
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 📂 Estrutura do Banco de Dados (MySQL)
 
-### Frontend
-* **HTML5 & JavaScript ES6+** (Consumo assíncrono de APIs via Fetch)
-* **Tailwind CSS v4** (Estilização moderna, utilitária e responsiva)
-* **Chart.js** (Renderização e manipulação de gráficos de linha e doughnut)
-
-### Backend & Banco de Dados
-* **Node.js & Express** (Arquitetura RESTful para rotas de BI e CRUD)
-* **MySQL** (Relacionamentos, Queries complexas com agrupamentos `GROUP BY` e condicionais `HAVING`)
-* **Dotenv** (Gerenciamento seguro de variáveis de ambiente)
-* **CORS** (Segurança e liberação de requisições Cross-Origin)
+O sistema conta com um banco de dados relacional chamado `barbearia`, estruturado com as seguintes tabelas:
+*   `empresas`: Dados da barbearia.
+*   `barbeiros`: Cadastro e status dos profissionais da casa.
+*   `cortes`: Lista de serviços, preços e URLs das imagens.
+*   `clientes`: Registro de clientes vinculados ao WhatsApp.
+*   `agendamentos`: Controle de horários e status dos agendamentos efetuados.
+*   `historico_agendamentos`: Registro histórico para alimentação da IA.
 
 ---
 
-## 📐 Estrutura do Banco de Dados (Abstração)
-
-A modelagem relacional do sistema foi estruturada para suportar o fluxo de dados entre empresas, clientes e serviços:
-* `empresas`: Registra os estabelecimentos parceiros (Tenants).
-* `cortes`: Armazena os serviços, valores e URLs de imagens vinculados a cada empresa.
-* `clientes`: Gerencia a base de usuários finais vinculada a cada barbearia.
-* `historico_agendamentos`: Tabela pivô contendo métricas transacionais de visitas, valores pagos e datas para alimentar o motor de BI.
-
----
-
-## ⚙️ Como Executar o Projeto Localmente
-
-### Pré-requisitos
-* Node.js instalado
-* Instância do MySQL ativa
-
-### Passo a Passo
+## 🔧 Como Executar o Projeto Localmente
 
 1. **Clone o repositório:**
 ```bash
-   git clone [https://github.com/Gabriel429oliveira/Site-Barbearia.git](https://github.com/Gabriel429oliveira/Site-Barbearia.git)
-   cd Site-Barbearia
+   git clone [https://github.com/seu-usuario/nome-do-repositorio.git](https://github.com/seu-usuario/nome-do-repositorio.git)
