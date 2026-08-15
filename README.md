@@ -1,8 +1,8 @@
 # 💈 Site Barbearia & EstiloBot 🤖
 
-Este é um ecossistema completo para gestão e automação de barbearias, composto por uma plataforma web institucional/administrativa e um assistente virtual inteligente integrado ao WhatsApp.
+Plataforma SaaS de gestão para barbearias, com área administrativa completa e assistente virtual inteligente integrado ao WhatsApp.
 
-O projeto utiliza inteligência artificial para humanizar o atendimento ao cliente, consultar disponibilidade de horários em tempo real no banco de dados e realizar agendamentos de forma 100% automatizada.
+O sistema permite que cada barbearia gerencie seu próprio negócio (agenda, clientes, cortes e histórico) enquanto a inteligência artificial cuida do atendimento: sugere cortes com base no histórico do cliente, consulta a disponibilidade de horários em tempo real e realiza agendamentos de forma 100% automatizada.
 
 
 
