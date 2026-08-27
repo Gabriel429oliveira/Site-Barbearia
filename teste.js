@@ -1,38 +1,35 @@
-// Carrega as variáveis ocultas do arquivo .env (Segurança para Portfólio)
 require('dotenv').config();
 
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 console.log('🤖 Iniciando o EstiloBot com IA e Banco de Dados Protegidos...');
 
-// 1. CONEXÃO AO BANCO DE DADOS MYSQL (Puxando com segurança do .env)
-const db = mysql.createConnection({
+// 1. POOL DE CONEXÕES MYSQL
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-// Helper para rodar as queries com Promises
-const ejecutarQuery = (sql, params) => {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, results) => {
-            if (err) return reject(err);
-            resolve(results);
-        });
-    });
+const ejecutarQuery = async (sql, params) => {
+    const [results] = await pool.execute(sql, params);
+    return results;
 };
 
-const ID_BARBEARIA = 1;
+const ID_BARBEARIA = process.env.ID_BARBEARIA || 1;
 
-// 2. CONFIGURAÇÃO DO WHATSAPP (USANDO O TEU CHROME)
+// 2. CONFIGURAÇÃO DO WHATSAPP
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({ dataPath: './sessao_whatsapp' }),
     puppeteer: {
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        executablePath: process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
 });
@@ -45,30 +42,37 @@ client.on('ready', () => {
     console.log('\n🟢 SUCESSO: O WhatsApp está conectado e inteligente!\n');
 });
 
-// 3. EVENTO CENTRAL DE MENSAGENS (MESSAGE_CREATE)
+// Tratamento de queda/desconexão automática do navegador
+client.on('disconnected', (reason) => {
+    console.log('⚠️ Cliente do WhatsApp foi desconectado:', reason);
+    client.initialize();
+});
+
+// 3. EVENTO CENTRAL DE MENSAGENS
 client.on('message_create', async (msg) => {
     
-    // TRAVA ANTI-LOOP INTELIGENTE
-    if (msg.fromMe && msg.body.includes('EstiloBot')) {
-        return;
-    }
+    // TRAVA 1: Ignora qualquer mensagem enviada por VOCÊ (evita responder você mesmo)
+    if (msg.fromMe) return;
 
-    // TRAVA 1: Ignora Grupos
+    // TRAVA 2: Ignora grupos (pelo ID direto)
     if (msg.from.endsWith('@g.us') || msg.to.endsWith('@g.us')) return;
 
-    // Definição do destino do chat de testes
-    const destino = msg.fromMe ? msg.to : msg.from;
-    
-    // TRAVA 2: Filtro de segurança para o seu número de teste no privado
-    const SEU_NUMERO_WHATSAPP = '5511942634316@c.us';
-    if (destino !== SEU_NUMERO_WHATSAPP) return;
-
-    const whatsappClienteLimpo = destino.split('@')[0];
-    const mensagemCliente = msg.body;
-
     try {
-        // [PASSO A] Buscar dados da Empresa e os Cortes disponíveis
-        const empresa = await executarQuery('SELECT nome_comercial FROM empresas WHERE id = ?', [ID_BARBEARIA]);
+        // TRAVA 3: Validação extra de segurança - confirma se a conversa é um grupo
+        const chat = await msg.getChat();
+        if (chat.isGroup) return;
+
+        const destino = msg.from;
+        const whatsappClienteLimpo = destino.split('@')[0];
+        const mensagemCliente = msg.body;
+
+        // [PASSO A] Buscar dados da Empresa e Cortes
+        const empresa = await ejecutarQuery('SELECT nome_comercial FROM empresas WHERE id = ?', [ID_BARBEARIA]);
+        if (!empresa.length) {
+            console.log('⚠️ Empresa não encontrada para o ID informado.');
+            return;
+        }
+
         const cortes = await ejecutarQuery('SELECT id, nome, preco, descricao, url_imagem FROM cortes WHERE id_barbearia = ?', [ID_BARBEARIA]);
         const listaCortesTexto = cortes.map(c => `- ID [${c.id}] ${c.nome}: R$ ${c.preco} (${c.descricao})`).join('\n');
 
@@ -108,61 +112,53 @@ client.on('message_create', async (msg) => {
             }
         }
 
-        // [PASSO C] Buscar Barbeiros e Calcular Horários Livres Dinamicamente
+        // [PASSO C] Buscar Barbeiros e Horários
         const barbeiros = await ejecutarQuery('SELECT id, nome, especialidade FROM barbeiros WHERE status = "ativo"', []);
         const listaBarbeirosTexto = barbeiros.map(b => `- ID [${b.id}] ${b.nome} (${b.especialidade})`).join('\n');
 
-        // Lógica de horários padrão de atendimento
         const horariosPadrao = ["13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-        
-        // Data de hoje no formato YYYY-MM-DD
         const hoje = new Date().toISOString().split('T')[0];
         
-        // Busca agendamentos ativos para hoje
         const agendamentosHoje = await ejecutarQuery(
             'SELECT data_hora FROM agendamentos WHERE DATE(data_hora) = ? AND status != "cancelado"', 
             [hoje]
         );
 
-        // Filtra as horas ocupadas
         const horasOcupadas = agendamentosHoje.map(a => {
             const dataHora = new Date(a.data_hora);
             return dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         });
 
         const horariosLivres = horariosPadrao.filter(hora => !horasOcupadas.includes(hora));
-        const listaHorariosTexto = horariosLivres.length > 0 
-            ? horariosLivres.join(', ') 
-            : "Nenhum horário disponível para hoje.";
+        const listaHorariosTexto = horariosLivres.length > 0 ? horariosLivres.join(', ') : "Nenhum horário disponível para hoje.";
 
-        // [PASSO D] Prompt humanizado para o Gemini
+        // [PASSO D] Prompt do Gemini
         const contextoSistema = `
         Você é o "EstiloBot", o assistente inteligente da barbearia: "${empresa[0].nome_comercial}".
         Aja de forma extremamente amigável, acolhedora e informal.
-        Sempre assine ou se identifique como "EstiloBot" em algum ponto da mensagem para que o sistema funcione.
+        Sempre assine ou se identifique como "EstiloBot" em algum ponto da mensagem.
         
         ${dadosHistoricoPrompt}
         
         Lista oficial de serviços, IDs e preços:
         ${listaCortesTexto}
 
-        Lista de Barbeiros da casa (use os IDs internamente se necessário):
+        Lista de Barbeiros da casa:
         ${listaBarbeirosTexto}
         
         Horários LIVRES reais para hoje (${hoje}):
         [ ${listaHorariosTexto} ]
 
         REGRAS DE ATENDIMENTO HUMANIZADO:
-        1. Se for CLIENTE NOVO: Dê as boas-vindas. Pergunte o estilo de corte que ele curte. Sugira o melhor corte da lista.
-        2. Se for CLIENTE ANTIGO: Chame-o pelo nome (${nomeCliente}). Pergunte se vai querer repetir o corte habitual dele ou o mais recente.
-        3. APÓS A ESCOLHA DO CORTE: Mostre os Barbeiros disponíveis e as opções de HORÁRIOS LIVRES reais para ele escolher.
-        4. ENVIO DE FOTOS: Quando sugerir ou confirmar um corte da lista, inclua SEMPRE no final da resposta a tag: [ENVIAR_FOTO_ID: X] (onde X é o ID do corte).
-        5. QUANDO O CLIENTE ESCOLHER O BARBEIRO E O HORÁRIO LIGADO A UM CORTE: Você deve confirmar os dados textualmente de forma simpática E incluir obrigatoriamente a seguinte tag secreta no final:
+        1. Se for CLIENTE NOVO: Dê as boas-vindas. Pergunte o estilo de corte que ele curte e sugira opções.
+        2. Se for CLIENTE ANTIGO: Chame-o pelo nome (${nomeCliente}). Pergunte se vai querer repetir o corte habitual ou o mais recente.
+        3. APÓS A ESCOLHA DO CORTE: Mostre os Barbeiros disponíveis e as opções de HORÁRIOS LIVRES.
+        4. ENVIO DE FOTOS: Inclua no final da resposta a tag: [ENVIAR_FOTO_ID: X] (onde X é o ID do corte).
+        5. AO CONFIRMAR AGENDAMENTO: Inclua a tag:
            [AGENDAR_DATA_HORA: YYYY-MM-DD HH:MM | BARBEIRO_ID: X | CORTE_ID: Z]
-           Exemplo: Se ele escolheu o barbeiro ID 1, às 15:00, para o corte ID 2 hoje, coloque: [AGENDAR_DATA_HORA: ${hoje} 15:00 | BARBEIRO_ID: 1 | CORTE_ID: 2]
         `;
 
-        // [PASSO E] Chamada para a API do Gemini (Puxando com segurança do .env)
+        // [PASSO E] Requisição para API do Gemini
         const apiKey = process.env.GEMINI_API_KEY;
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
@@ -182,10 +178,10 @@ client.on('message_create', async (msg) => {
 
         const data = await response.json();
         
-        if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+        if (data.candidates && data.candidates[0]?.content?.parts) {
             let respostaIA = data.candidates[0].content.parts[0].text;
             
-            // 1. Captura tag de Foto se houver
+            // Tratamento de tags de foto
             let idCorteDetectado = null;
             const regexTagFoto = /\[ENVIAR_FOTO_ID:\s*(\d+)\]/;
             const matchFoto = respostaIA.match(regexTagFoto);
@@ -195,7 +191,7 @@ client.on('message_create', async (msg) => {
                 respostaIA = respostaIA.replace(regexTagFoto, '').trim();
             }
 
-            // 2. Captura tag de Agendamento Real se houver
+            // Tratamento de tags de agendamento
             const regexAgendamento = /\[AGENDAR_DATA_HORA:\s*([\d-]+ [\d:]+)\s*\|\s*BARBEIRO_ID:\s*(\d+)\s*\|\s*CORTE_ID:\s*(\d+)\]/;
             const matchAgendamento = respostaIA.match(regexAgendamento);
 
@@ -206,7 +202,6 @@ client.on('message_create', async (msg) => {
                 
                 respostaIA = respostaIA.replace(regexAgendamento, '').trim();
 
-                // Faz o agendamento real na tabela 'agendamentos'
                 if (idClienteAtual) {
                     const corteEscolhido = cortes.find(c => c.id == idCorteAgendamento);
                     const precoCorte = corteEscolhido ? corteEscolhido.preco : 0.00;
@@ -216,34 +211,31 @@ client.on('message_create', async (msg) => {
                          VALUES (?, ?, ?, 'confirmado', ?, 'pendente')`,
                         [idClienteAtual, idBarbeiroAgendamento, dataHoraAgendamento, precoCorte]
                     );
-                    console.log(`📅 SUCESSO: Agendamento inserido no MySQL para as ${dataHoraAgendamento}!`);
-                } else {
-                    console.log(`⚠️ Cliente não cadastrado na tabela 'clientes'. Não foi possível salvar o agendamento.`);
+                    console.log(`📅 Agendamento salvo para as ${dataHoraAgendamento}!`);
                 }
             }
 
-            // Garante que a resposta contenha o nome do bot para ativar a trava anti-loop
             if (!respostaIA.includes('EstiloBot')) {
                 respostaIA += '\n\nAtenciosamente, EstiloBot 🤖';
             }
 
-            // Envia o texto da IA para o cliente
             await client.sendMessage(destino, respostaIA);
 
-            // Tenta enviar a foto se houver uma URL válida
+            // Validação aprimorada para o envio de fotos
             if (idCorteDetectado) {
                 const corteEncontrado = cortes.find(c => c.id == idCorteDetectado);
                 if (corteEncontrado && corteEncontrado.url_imagem && corteEncontrado.url_imagem.startsWith('http')) {
                     try {
-                        const { MessageMedia } = require('whatsapp-web.js');
                         const media = await MessageMedia.fromUrl(corteEncontrado.url_imagem);
                         await client.sendMessage(destino, media, { caption: `Exemplo de ${corteEncontrado.nome}` });
                     } catch (mediaErr) {
-                        console.log('⚠️ Link da foto inacessível ou fictício.');
+                        console.log('⚠️ URL da imagem do corte é inválida ou inacessível.');
                     }
                 }
             }
-            console.log(`🤖 Resposta humanizada entregue para: ${whatsappClienteLimpo}`);
+            console.log(`🤖 Resposta enviada com sucesso para: ${whatsappClienteLimpo}`);
+        } else {
+            console.error('⚠️ Resposta inválida da API Gemini:', data);
         }
 
     } catch (error) {
@@ -251,13 +243,5 @@ client.on('message_create', async (msg) => {
     }
 });
 
-// Inicializa o banco primeiro, e só liga o robô quando o banco responder com sucesso
-db.connect((err) => {
-    if (err) {
-        console.error('❌ Erro crítico no MySQL: ', err.message);
-        return;
-    }
-    console.log('🎉 Conectado ao Banco de Dados com sucesso!');
-    console.log('🚀 Inicializando o cliente do WhatsApp...');
-    client.initialize();
-});
+// Inicialização do WhatsApp Web Client
+client.initialize();
