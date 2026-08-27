@@ -1,34 +1,27 @@
-require('dotenv').config(); 
+require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const mysql = require('mysql2');
-const cors = require('cors'); 
-// 1. Importa o SDK oficial da Google Gen AI
-const { GoogleGenAI } = require('@google/genai'); 
+const QRCode = require('qrcode');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
 
-// Inicializa a Inteligência Artificial puxando a chave do .env
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-// Conexão ao Banco de Dados MySQL
-const db = mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: '10Oliveira#', 
-    database: 'barbearia',
-    port: 3306
+// Conexão com o Banco de Dados (createPool)
+const db = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'barbearia',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-db.connect((err) => {
-    if (err) return console.error('Erro no MySQL: ', err.message);
-    console.log('🎉 Conectado ao MySQL com sucesso!');
-});
-
-// Helper para transformar as queries do banco em Promises
-const executarQuery = (sql, params) => {
+// Helper para executar queries no MySQL via Promises
+const ejecutarQuery = (sql, params = []) => {
     return new Promise((resolve, reject) => {
         db.query(sql, params, (err, results) => {
             if (err) return reject(err);
@@ -37,228 +30,147 @@ const executarQuery = (sql, params) => {
     });
 };
 
-// 2. ROTA CENTRAL DO CHAT (INTEGRADA COM O SDK RECENTE DO GEMINI)
-app.post('/api/chat', async (req, res) => {
-    const { mensagemCliente, whatsappCliente, idBarbearia } = req.body;
-
-    if (!mensagemCliente || !whatsappCliente || !idBarbearia) {
-        return res.status(400).json({ erro: 'Faltam parâmetros: mensagemCliente, whatsappCliente ou idBarbearia são obrigatórios.' });
+// Teste de conexão inicial com o pool
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('Erro ao conectar ao Pool do MySQL:', err.message);
+    } else {
+        console.log('Conectado ao Pool do MySQL com sucesso!');
+        connection.release();
     }
+});
+
+// Configuração opcional do Gemini AI
+const apiKey = process.env.GEMINI_API_KEY;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+// Rota de Agendamento
+app.post('/api/agendamentos', async (req, res) => {
+    const { 
+        barbearia_id, 
+        cliente_id, 
+        barbeiro_id, 
+        servico_id, 
+        data, 
+        hora, 
+        valor, 
+        metodo_pagamento 
+    } = req.body;
+
+    const data_hora = `${data} ${hora}:00`;
+    const targetBarbeariaId = barbearia_id || 1;
 
     try {
-        // [PASSO A] Buscar dados da Empresa e seus Cortes
-        const empresa = await executarQuery('SELECT nome_comercial FROM empresas WHERE id = ?', [idBarbearia]);
-        if (empresa.length === 0) return res.status(404).json({ erro: 'Barbearia não cadastrada no sistema.' });
-        
-        const cortes = await executarQuery('SELECT id, nome, preco, descricao, url_imagem FROM cortes WHERE id_barbearia = ?', [idBarbearia]);
-        const listaCortesTexto = cortes.map(c => `- ID [${c.id}] ${c.nome}: R$ ${c.preco} (${c.descricao})`).join('\n');
-
-        // [PASSO B] Verificar se o cliente já existe nesta barbearia
-        const clienteLogado = await executarQuery('SELECT id, nome FROM clientes WHERE id_barbearia = ? AND whatsapp = ?', [idBarbearia, whatsappCliente]);
-
-        let dadosHistoricoPrompt = "SITUAÇÃO DO CLIENTE: Este é um cliente NOVO. Ele não tem histórico de cortes na nossa barbearia.";
-        let nomeCliente = "Cliente";
-
-        if (clienteLogado.length > 0) {
-            nomeCliente = clienteLogado[0].nome;
-            const idCliente = clienteLogado[0].id;
-
-            // 1. Tentar buscar o corte MAIS FEITO (Habitual) se ele veio mais de 2 vezes
-            const corteHabitual = await executarQuery(`
-                SELECT id_corte, cortes.nome, COUNT(id_corte) as total 
-                FROM historico_agendamentos 
-                JOIN cortes ON cortes.id = historico_agendamentos.id_corte
-                WHERE historico_agendamentos.id_cliente = ? 
-                GROUP BY id_corte 
-                HAVING total >= 2
-                ORDER BY total DESC LIMIT 1`, [idCliente]);
-
-            // 2. Buscar o ÚLTIMO corte feito por ele
-            const ultimoCorte = await executarQuery(`
-                SELECT id_corte, cortes.nome 
-                FROM historico_agendamentos 
-                JOIN cortes ON cortes.id = historico_agendamentos.id_corte
-                WHERE historico_agendamentos.id_cliente = ? 
-                ORDER BY data_servico DESC LIMIT 1`, [idCliente]);
-
-            if (corteHabitual.length > 0) {
-                dadosHistoricoPrompt = `SITUAÇÃO DO CLIENTE: Este é um cliente ANTIGO. O nome dele é ${nomeCliente}. O corte que ele MAIS FAZ (Corte Habitual) é o "${corteHabitual[0].nome}".`;
-            } else if (ultimoCorte.length > 0) {
-                dadosHistoricoPrompt = `SITUAÇÃO DO CLIENTE: Este é um cliente ANTIGO. O nome dele é ${nomeCliente}. Ele ainda não tem um padrão fixo, mas o ÚLTIMO corte que ele realizou connosco na última visita foi o "${ultimoCorte[0].nome}".`;
-            } else {
-                dadosHistoricoPrompt = `SITUAÇÃO DO CLIENTE: O cliente chama-se ${nomeCliente}, mas ainda não realizou nenhum serviço connosco.`;
-            }
+        // Prevenção de Crashing (Trata retorno vazio da tabela empresas)
+        const empresas = await ejecutarQuery('SELECT id FROM empresas WHERE id = ?', [targetBarbeariaId]);
+        if (!empresas || empresas.length === 0) {
+            console.warn(`Empresa ID ${targetBarbeariaId} não encontrada no banco. Usando ID padrão 1.`);
         }
 
-        // [PASSO C] Construir o Contexto do Prompt do Sistema
-        const contextoSistema = `
-        Tu és o "EstiloBot", o assistente inteligente da barbearia: "${empresa[0].nome_comercial}".
-        
-        ${dadosHistoricoPrompt}
-        
-        Aqui está a lista oficial de serviços, preços e IDs desta barbearia extraídos do banco de dados:
-        ${listaCortesTexto}
-
-        REGRAS DE ATENDIMENTO (Siga rigorosamente):
-        1. Se for a primeira mensagem do cliente ou saudação, age conforme o histórico:
-           - Se tiver CORTE HABITUAL: Pergunta amigavelmente se ele vai querer repetir o corte habitual dele (mencione o nome do corte).
-           - Se tiver apenas ÚLTIMO CORTE: Pergunta se ele quer manter o último corte feito ou se quer mudar.
-           - Se for CLIENTE NOVO: Dá as boas-vindas e faz perguntas curtas para entender o gosto dele (ex: estilo clássico ou moderno? curto ou comprido?) para chegares a uma recomendação ideal.
-        2. Se o cliente pedir uma recomendação ou responder às tuas perguntas, analisa a nossa lista de cortes e sugere o que melhor se encaixa.
-        3. Responde sempre de forma curta, prestativa e amigável.
-        4. CRÍTICO: Quando tu decidires recomendar ou confirmar um corte específico da lista, inclui SEMPRE no final da tua resposta a tag exata do ID do corte desta forma: [ENVIAR_FOTO_ID: X] (onde X é o número do ID do corte). Não inventes IDs!
+        const queryInsert = `
+            INSERT INTO agendamentos 
+            (barbearia_id, cliente_id, barbeiro_id, data_hora, valor, metodo_pagamento, status) 
+            VALUES (?, ?, ?, ?, ?, ?, 'pendente')
         `;
 
-        // 3. Chamada utilizando a Biblioteca Oficial @google/genai
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        { text: contextoSistema },
-                        { text: `Mensagem enviada pelo Cliente (${nomeCliente}): ${mensagemCliente}` }
-                    ]
-                }
-            ]
-        });
+        await ejecutarQuery(queryInsert, [
+            targetBarbeariaId, 
+            cliente_id || 1, 
+            barbeiro_id || 1, 
+            data_hora, 
+            valor || 0, 
+            metodo_pagamento || 'local'
+        ]);
 
-        // Extrai o texto gerado de dentro da estrutura oficial de resposta do SDK
-        let respostaIA = response.text;
-        
-        if (!respostaIA) {
-            return res.status(500).json({ erro: 'Não foi possível gerar resposta através da IA.' });
+        if (metodo_pagamento === 'pix') {
+            const payloadPixFake = "00020126360014BR.GOV.BCB.PIX0114+5511942634316520400005303986540530.005802BR5916Barbearia Estilo6009Sao Paulo62070503***6304E2CA";
+            
+            try {
+                const qrCodeBase64 = await QRCode.toDataURL(payloadPixFake);
+                return res.json({
+                    sucesso: true,
+                    mensagem: 'Agendamento pré-reservado! Faça o pagamento via PIX para confirmar.',
+                    metodo: 'pix',
+                    pix_copia_e_cola: payloadPixFake,
+                    pix_qr_code_base64: qrCodeBase64
+                });
+            } catch (qrErr) {
+                console.error('Erro ao gerar QR Code:', qrErr);
+                return res.json({
+                    sucesso: true,
+                    mensagem: 'Agendamento registrado, mas houve um erro ao gerar o QR Code do PIX.',
+                    metodo: 'local'
+                });
+            }
         }
 
-        // [PASSO D] Lógica de detecção de Tags de Imagem baseada no texto da IA
-        let imagemParaEnviar = null;
-        const regexTag = /\[ENVIAR_FOTO_ID:\s*(\d+)\]/;
-        const match = respostaIA.match(regexTag);
+        return res.json({
+            sucesso: true,
+            mensagem: 'Agendamento realizado com sucesso! Aguardamos você no horário marcado.',
+            metodo: 'local'
+        });
 
-        if (match) {
-            const idCorteDetectado = match[1];
-            const corteEncontrado = cortes.find(c => c.id == idCorteDetectado);
-            if (corteEncontrado && corteEncontrado.url_imagem) {
-                imagemParaEnviar = corteEncontrado.url_imagem;
+    } catch (err) {
+        // Trata o erro de horário duplicado (UNIQUE constraint no MySQL)
+        if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+            return res.status(400).json({ 
+                sucesso: false, 
+                erro: 'Este horário já está reservado para este barbeiro. Por favor, escolha outro horário.' 
+            });
+        }
+        console.error('Erro ao salvar agendamento:', err);
+        return res.status(500).json({ sucesso: false, erro: 'Erro interno ao salvar o agendamento.' });
+    }
+});
+
+// Rota do Chat (EstiloBot / Gemini IA)
+app.post('/api/chat', async (req, res) => {
+    const { mensagemCliente, barbearia_id } = req.body;
+    const targetBarbeariaId = barbearia_id || 1;
+
+    if (!mensagemCliente) {
+        return res.status(400).json({ resposta: 'Mensagem inválida.' });
+    }
+
+    try {
+        let nomeBarbearia = 'Barbearia Estilo';
+        try {
+            const empresas = await ejecutarQuery('SELECT nome FROM empresas WHERE id = ?', [targetBarbeariaId]);
+            if (empresas && empresas.length > 0) {
+                nomeBarbearia = empresas[0].nome;
             }
-            respostaIA = respostaIA.replace(regexTag, '').trim();
+        } catch (dbErr) {
+            console.warn('Não foi possível carregar dados da empresa no chat:', dbErr.message);
         }
 
-        // Retorna a resposta final limpa e o link da imagem anexada para o seu Front-end
-        return res.json({ 
-            resposta: respostaIA,
-            anexo_imagem: imagemParaEnviar 
-        });
-
-    } catch (error) {
-        console.error("Erro na rota de chat:", error);
-        res.status(500).json({ erro: 'Erro interno no servidor: ' + error.message });
-    }
-});
-
-// ROTA DE RELATÓRIOS (BI PREMIUM)
-app.get('/api/relatorios/:idBarbearia', async (req, res) => {
-    const { idBarbearia } = req.params;
-
-    try {
-        const totalClientesResult = await executarQuery(`
-            SELECT COUNT(*) as total FROM clientes WHERE id_barbearia = ?
-        `, [idBarbearia]);
-
-        const faturamentoResult = await executarQuery(`
-            SELECT SUM(valor_pago) as total, COUNT(*) as total_visitas 
-            FROM historico_agendamentos 
-            WHERE id_barbearia = ?
-        `, [idBarbearia]);
-
-        const faturamentoTotal = faturamentoResult[0].total || 0;
-        const totalVisitas = faturamentoResult[0].total_visitas || 0;
-        const ticketMedio = totalVisitas > 0 ? (faturamentoTotal / totalVisitas) : 0;
-
-        const cortesMaisFeitos = await executarQuery(`
-            SELECT cortes.nome, COUNT(historico_agendamentos.id_corte) as quantity
-            FROM historico_agendamentos
-            JOIN cortes ON cortes.id = historico_agendamentos.id_corte
-            WHERE historico_agendamentos.id_barbearia = ?
-            GROUP BY historico_agendamentos.id_corte
-            ORDER BY quantity DESC
-        `, [idBarbearia]);
-
-        const clientesFieisResult = await executarQuery(`
-            SELECT COUNT(*) as total_fieis FROM (
-                SELECT id_cliente FROM historico_agendamentos 
-                WHERE id_barbearia = ? 
-                GROUP BY id_cliente 
-                HAVING COUNT(id) >= 2
-            ) as subquery
-        `, [idBarbearia]);
-
-        const totalClientes = totalClientesResult[0].total || 0;
-        const totalFieis = clientesFieisResult[0].total_fieis || 0;
-        const taxaRetencao = totalClientes > 0 ? ((totalFieis / totalClientes) * 100) : 0;
-
-        const movimentoDias = await executarQuery(`
-            SELECT DAYOFWEEK(data_servico) as dia_semana, COUNT(*) as quantidade
-            FROM historico_agendamentos
-            WHERE id_barbearia = ?
-            GROUP BY dia_semana
-            ORDER BY dia_semana
-        `, [idBarbearia]);
-
-        const dadosDiasVisitas = [0, 0, 0, 0, 0, 0, 0]; 
-
-        movimentoDias.forEach(row => {
-            if(row.dia_semana >= 1 && row.dia_semana <= 7) {
-                dadosDiasVisitas[row.dia_semana - 1] = row.quantidade;
+        if (genAI) {
+            try {
+                const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                const prompt = `Você é o assistente virtual da ${nomeBarbearia}. Responda à dúvida do cliente com cordialidade e objetividade.\nCliente: ${mensagemCliente}`;
+                
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                return res.json({ resposta: response.text() });
+            } catch (aiErr) {
+                console.error('Erro/Quota excedida na API Gemini:', aiErr.message);
+                return res.json({
+                    resposta: `Olá! Recebi sua mensagem na ${nomeBarbearia}. No momento nosso assistente automático está em alta demanda, mas em breve nossa equipe te atenderá!`
+                });
             }
+        }
+
+        return res.json({
+            resposta: `Olá! Bem-vindo à ${nomeBarbearia}. Recebi sua mensagem: "${mensagemCliente}". Em breve nossa equipe entrará em contato.`
         });
 
-        res.json({
-            totalClientes,
-            faturamentoTotal,
-            ticketMedio,
-            taxaRetencao: taxaRetencao.toFixed(1), 
-            rankingCortes: cortesMaisFeitos,
-            graficoLinhaDias: {
-                labels: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
-                valores: dadosDiasVisitas.slice(1, 7) 
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({ erro: 'Erro ao gerar relatórios avançados: ' + error.message });
+    } catch (err) {
+        console.error('Erro na rota do chat:', err);
+        return res.status(500).json({ resposta: 'Erro interno ao processar sua mensagem.' });
     }
 });
 
-// ROTA: BUSCAR CORTES POR BARBEARIA
-app.get('/api/cortes/:idBarbearia', async (req, res) => {
-    const { idBarbearia } = req.params;
-    try {
-        const cortes = await executarQuery('SELECT id, nome, preco, descricao, url_imagem FROM cortes WHERE id_barbearia = ?', [idBarbearia]);
-        res.json(cortes);
-    } catch (error) {
-        res.status(500).json({ erro: 'Erro ao buscar cortes: ' + error.message });
-    }
+// Inicialização do Servidor
+const PORT = process.env.PORT || 2999;
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
-
-// ROTA: CADASTRAR NOVO CORTE
-app.post('/api/cortes', async (req, res) => {
-    const { id_barbearia, nome, preco, descricao, url_imagem } = req.body;
-
-    if (!id_barbearia || !nome || !preco) {
-        return res.status(400).json({ erro: 'Faltam parâmetros obrigatórios (id_barbearia, nome ou preco).' });
-    }
-
-    try {
-        await executarQuery(
-            'INSERT INTO cortes (id_barbearia, nome, preco, descricao, url_imagem) VALUES (?, ?, ?, ?, ?)',
-            [id_barbearia, nome, preco, descricao, url_imagem]
-        );
-        res.status(201).json({ sucesso: true, mensagem: 'Corte cadastrado com sucesso!' });
-    } catch (error) {
-        res.status(500).json({ erro: 'Erro ao cadastrar corte: ' + error.message });
-    }
-});
-
-const PORT = 2999;
-app.listen(PORT, () => console.log(`🚀 Servidor backend multi-empresa rodando na porta ${PORT}`));
