@@ -2,3 +2,6 @@ node_modules/
 .env
 .wwebjs_auth/
 .wwebjs_cache/
+sessao_whatsapp/
+node_modules/
+.env
