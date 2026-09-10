@@ -59,3 +59,52 @@ Banco relacional `barbearia`, com as seguintes tabelas:
 - `bot_status`: status de conexão do WhatsApp (para o painel exibir o QR Code)
 
 ## 📁 Estrutura do Projeto
+
+├── server.js # API principal (Express)
+├── bot.js # Assistente do WhatsApp (processo separado)
+├── lembretes.js # Rotina de lembretes automáticos
+├── pix.js # Geração do payload PIX (compartilhado)
+├── public/
+│ ├── index.html # Site institucional
+│ ├── modelos.html # Galeria de modelos de corte
+│ ├── manifest.json # Configuração da PWA
+│ ├── sw.js # Service Worker
+│ ├── style.css
+│ ├── menu.js
+│ ├── imagens/
+│ └── admin/ # Painel administrativo
+│ ├── login.html
+│ ├── relatorios.html
+│ ├── cortes.html
+│ └── bot.html
+
+
+## 🔧 Como Executar o Projeto Localmente
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/Gabriel429oliveira/Site-Barbearia.git
+```
+
+2. Instale as dependências:
+```bash
+npm install
+```
+
+3. Crie um arquivo `.env` na raiz com as variáveis necessárias (banco de dados, chave da API Gemini, JWT secret, chave PIX). Consulte o código-fonte para a lista completa de variáveis usadas.
+
+4. Inicie a API:
+```bash
+node server.js
+```
+
+5. Em um terminal separado, inicie o assistente do WhatsApp:
+```bash
+node bot.js
+```
+
+6. Acesse o site em `http://localhost:2999` e o painel em `http://localhost:2999/admin/login.html`.
+
+## 👤 Autor
+
+Desenvolvido por [Gabriel Oliveira](https://github.com/Gabriel429oliveira).
