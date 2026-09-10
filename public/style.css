@@ -139,6 +139,18 @@ header.cabecalho .menu a:hover {
   color: var(--primary-color);
 }
 
+/* NOVO: link "Área Restrita" no menu — discreto, com ícone */
+.link-login {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.75;
+}
+
+.link-login:hover {
+  opacity: 1;
+}
+
 .menu-mobile-close, .menu-mobile-socials {
   display: none;
 }
@@ -336,10 +348,19 @@ header.cabecalho .btn-contato:hover {
 }
 
 .card p {
-  margin: 0 25px 30px;
+  margin: 0 25px 15px;
   font-size: 0.95rem;
   color: #555;
   height: 45px; 
+}
+
+/* NOVO: preço dos serviços, dentro do card */
+.servico-preco {
+  height: auto !important;
+  margin: 0 25px 20px !important;
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  color: var(--dark-color) !important;
 }
 
 .btn-servico {
@@ -407,7 +428,14 @@ header.cabecalho .btn-contato:hover {
   font-weight: 900;
 }
 
-/* Mudança Importante: O elemento .foto-item agora é um link block */
+/* NOVO: texto de instrução acima da galeria (era inline style antes) */
+.galeria-instrucao {
+  text-align: center;
+  margin-top: -30px;
+  margin-bottom: 40px;
+  color: #666;
+}
+
 .galeria-fotos {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -419,7 +447,7 @@ header.cabecalho .btn-contato:hover {
   height: 300px;
   border-radius: 4px;
   cursor: pointer;
-  text-decoration: none; /* Remove traces de link */
+  text-decoration: none;
   display: block;
 }
 
@@ -472,7 +500,7 @@ header.cabecalho .btn-contato:hover {
 }
 
 /* ==========================================================================
-   ESTILOS EXCLUSIVOS DA PÁGINA DE MODELOS DE CORTE (NOVO)
+   ESTILOS EXCLUSIVOS DA PÁGINA DE MODELOS DE CORTE
    ========================================================================== */
 .modelos-secao-expandida {
   padding-top: 180px;
@@ -583,13 +611,33 @@ header.cabecalho .btn-contato:hover {
   border: 1px solid #eee;
 }
 
+/* NOVO: rótulo (label) dos campos do formulário — escuro sobre fundo claro por padrão */
+.rotulo-form {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+/* NOVO: variante clara, para o campo "Forma de Pagamento" que fica sobre o fundo escuro da seção */
+.rotulo-form--claro {
+  color: #fff;
+}
+
 .form-linha {
   display: flex;
   gap: 25px;
 }
 
-.form-linha input, select {
+.form-linha > div {
   flex: 1;
+}
+
+.form-linha input, select,
+.formulario > div > select,
+.formulario > div > input {
+  width: 100%;
   padding: 15px;
   border-radius: 4px;
   border: 1px solid #ccc;
@@ -602,6 +650,20 @@ header.cabecalho .btn-contato:hover {
 
 .form-linha input:focus, select:focus {
   border-color: #111;
+}
+
+/* NOVO: select de forma de pagamento (era inline style antes) */
+.select-pagamento {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+}
+
+.campo-form {
+  margin-bottom: 15px;
 }
 
 button[type="submit"] {
@@ -656,6 +718,12 @@ button[type="submit"]:hover {
 .rodape-endereco p i {
   color: var(--primary-color);
   margin-right: 8px;
+}
+
+/* NOVO: link "Painel Admin" no rodapé (era style inline antes) */
+.link-rodape {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .rodape-sociais {

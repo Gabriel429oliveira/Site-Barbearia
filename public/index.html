@@ -3,13 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barbearia Estilo</title>
+  <title>Barbearia Estilo | Cortes e Barba em São Paulo</title>
+
+  <!-- NOVO: meta description e Open Graph, para SEO e para o link ficar bonito quando compartilhado -->
+  <meta name="description" content="Barbearia Estilo: cortes modernos, barba personalizada e atendimento profissional em São Paulo. Agende pelo site ou WhatsApp.">
+  <meta property="og:title" content="Barbearia Estilo">
+  <meta property="og:description" content="Cortes modernos, barba personalizada e atendimento profissional em São Paulo. Agende pelo site ou WhatsApp.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="imagens/logo.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
   <link rel="stylesheet" href="style.css">
+
+  <!-- NOVO: configuração da PWA (Progressive Web App) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+  <link rel="apple-touch-icon" href="imagens/logo.png">
 </head>
 <body id="inicio">
 
@@ -17,7 +27,7 @@
     <div class="container cabecalho-flex">
 
       <div class="logo">
-        <img src="imgagens/imagens/logo.png" alt="Logo da Barbearia Estilo">
+        <img src="imagens/logo.png" alt="Barbearia Estilo">
       </div>
 
       <div class="menu-mobile-open" id="menu-mobile-open">
@@ -37,6 +47,7 @@
           <li><a href="#portfolio">Portfólio</a></li>
           <li><a href="#galeria">Galeria</a></li>
           <li><a href="#agendamento">Agendamento</a></li>
+          <li><a href="admin/login.html" class="link-login"><i class="fa-solid fa-lock"></i> Área Restrita</a></li>
         </ul>
 
         <div class="menu-mobile-socials">
@@ -75,7 +86,7 @@
       </div>
 
       <div class="sobre-imagem">
-        <img src="imgagens/imagens/barbearia.png" alt="Ambiente da Barbearia">
+        <img src="imagens/barbearia.png" alt="Ambiente da Barbearia Estilo">
       </div>
 
     </div>
@@ -87,9 +98,10 @@
       <p class="sec-subt">Profissionais altamente qualificados prontos para cuidar do seu visual.</p>
       
       <div class="barbeiros-grid">
+        <!-- PLACEHOLDER: avatar com iniciais até termos foto real de cada barbeiro -->
         <div class="barbeiro-card">
           <div class="barbeiro-img">
-            <img src="imgagens/imagens/corte.1.jpg" alt="Barbeiro Carlos">
+            <img src="https://ui-avatars.com/api/?name=Carlos+Santos&size=300&background=1a1a1a&color=53deea&bold=true" alt="Carlos Santos">
           </div>
           <h3>Carlos Silva</h3>
           <p>Especialista em Cortes Degradê e Visagismo</p>
@@ -100,7 +112,7 @@
 
         <div class="barbeiro-card">
           <div class="barbeiro-img">
-            <img src="imgagens/imagens/corte.2.jpg" alt="Barbeiro Roberto">
+            <img src="https://ui-avatars.com/api/?name=Roberto+Alves&size=300&background=1a1a1a&color=53deea&bold=true" alt="Roberto Alves">
           </div>
           <h3>Roberto Alves</h3>
           <p>Mestre Barbeiro Especialista em Toalha Quente</p>
@@ -111,7 +123,7 @@
 
         <div class="barbeiro-card">
           <div class="barbeiro-img">
-            <img src="imgagens/imagens/corte.3.jpg" alt="Barbeiro Amanda">
+            <img src="https://ui-avatars.com/api/?name=Amanda+Costa&size=300&background=1a1a1a&color=53deea&bold=true" alt="Amanda Costa">
           </div>
           <h3>Amanda Costa</h3>
           <p>Especialista em Estilos Clássicos e Desenhos</p>
@@ -132,23 +144,27 @@
       <div class="servicos-cards">
 
         <div class="card">
-          <img src="imgagens/imagens/corte.1.jpg" alt="Corte de Cabelo">
+          <img src="imagens/corte.1.jpg" alt="Corte de Cabelo">
           <h3><span>Corte de Cabelo</span></h3>
           <p>Cortes clássicos e modernos realizados com precisão e acabamento profissional.</p>
+          <!-- NOVO: preço, igual ao formulário de agendamento -->
+          <p class="servico-preco">R$ 30,00</p>
           <a href="#agendamento" class="btn-servico">Agendar</a>
         </div>
 
         <div class="card">
-          <img src="imgagens/imagens/corte.2.jpg" alt="Barba">
+          <img src="imagens/corte.2.jpg" alt="Barba">
           <h3><span>Barba</span></h3>
           <p>Design, alinhamento e tratamento completo para valorizar seu visual.</p>
+          <p class="servico-preco">R$ 25,00</p>
           <a href="#agendamento" class="btn-servico">Agendar</a>
         </div>
 
         <div class="card">
-          <img src="imgagens/imagens/corte.3.jpg" alt="Corte e Barba">
+          <img src="imagens/corte.3.jpg" alt="Corte e Barba">
           <h3><span>Corte + Barba</span></h3>
           <p>Pacote completo para quem busca praticidade, estilo e atendimento premium.</p>
+          <p class="servico-preco">R$ 50,00</p>
           <a href="#agendamento" class="btn-servico">Agendar</a>
         </div>
 
@@ -174,19 +190,22 @@
     <div class="container">
 
       <h2 class="titulo">Nosso <span>Portfólio</span></h2>
-      <p class="sec-subt">Confira os vídeos em execução contínua e nossa galeria interativa abaixo.</p>
+      <p class="sec-subt">Confira nossos trabalhos e nossa galeria interativa abaixo.</p>
 
+      <!-- Vídeos próprios (gerados por IA). Os dois cards usam o mesmo arquivo por enquanto,
+           já que só existe 1 vídeo pronto — troque o src do segundo <video> assim que
+           gravar/gerar um segundo vídeo diferente. -->
       <div class="videos-portfolio">
         <div class="video-card">
           <video autoplay muted loop playsinline class="video-loop">
-            <source src="imgagens/imagens/video.mp4" type="video/mp4">
+            <source src="imagens/video.mp4" type="video/mp4">
           </video>
           <h4>Corte <span>Moderno</span></h4>
         </div>
 
         <div class="video-card">
           <video autoplay muted loop playsinline class="video-loop">
-            <source src="imgagens/imagens/video.mp4" type="video/mp4">
+            <source src="imagens/video.mp4" type="video/mp4">
           </video>
           <h4>Barba <span>Estilizada</span></h4>
         </div>
@@ -194,27 +213,27 @@
 
       <div id="galeria" class="ancora-galeria"></div>
       <h3 class="subtitulo-galeria">Galeria de <span>Inspirações</span></h3>
-      <p style="text-align: center; margin-top: -30px; margin-bottom: 40px; color: #666;">Clique em qualquer foto para ver todos os nossos modelos de corte.</p>
+      <p class="galeria-instrucao">Clique em qualquer foto para ver todos os nossos modelos de corte.</p>
       
       <div class="galeria-fotos">
         
         <a href="modelos.html" class="foto-item">
           <div class="foto-card-inner">
-            <img src="imgagens/imagens/corte.1.jpg" alt="Corte de Cabelo Executado">
+            <img src="imagens/corte.1.jpg" alt="Corte de Cabelo Executado">
             <div class="overlay-foto"><p>Ver Modelos</p></div>
           </div>
         </a>
 
         <a href="modelos.html" class="foto-item">
           <div class="foto-card-inner">
-            <img src="imgagens/imagens/corte.2.jpg" alt="Barba Executada">
+            <img src="imagens/corte.2.jpg" alt="Barba Executada">
             <div class="overlay-foto"><p>Ver Modelos</p></div>
           </div>
         </a>
 
         <a href="modelos.html" class="foto-item">
           <div class="foto-card-inner">
-            <img src="imgagens/imagens/corte.3.jpg" alt="Corte e Barba Premium">
+            <img src="imagens/corte.3.jpg" alt="Corte e Barba Premium">
             <div class="overlay-foto"><p>Ver Modelos</p></div>
           </div>
         </a>
@@ -229,22 +248,52 @@
 
       <h2 class="titulo">Agende <span>Seu Horário</span></h2>
 
-      <form id="form-agendamento" class="formulario">
-        <div class="form-linha">
-          <input type="text" id="agenda-nome" name="nome" placeholder="Seu Nome" required>
-          <input type="email" id="agenda-email" name="email" placeholder="Seu E-mail" required>
+      <form id="form-agendamento" method="POST" class="formulario">
+        <input type="hidden" name="barbearia_id" value="1">
+        <input type="hidden" name="cliente_id" value="1">
+        <input type="hidden" name="barbeiro_id" value="1">
+
+        <div>
+          <label for="agenda-servico" class="rotulo-form">Serviço</label>
+          <select id="agenda-servico" name="servico" required>
+            <option value="">Selecione o Serviço</option>
+            <option value="1" data-preco="30.00">Corte de Cabelo — R$ 30,00</option>
+            <option value="2" data-preco="25.00">Barba — R$ 25,00</option>
+            <option value="3" data-preco="50.00">Corte + Barba — R$ 50,00</option>
+          </select>
         </div>
 
-        <select id="agenda-servico" name="servico" required>
-          <option value="">Selecione o Serviço</option>
-          <option value="Corte de Cabelo">Corte de Cabelo</option>
-          <option value="Barba">Barba</option>
-          <option value="Corte + Barba">Corte + Barba</option>
-        </select>
+        <input type="hidden" id="agenda-valor" name="valor" value="30.00">
+        
+        <div class="form-linha">
+          <div>
+            <label for="agenda-nome" class="rotulo-form">Seu Nome</label>
+            <!-- NOVO: autocomplete -->
+            <input type="text" id="agenda-nome" name="nome" autocomplete="name" placeholder="Seu Nome" required>
+          </div>
+          <div>
+            <label for="agenda-email" class="rotulo-form">Seu E-mail</label>
+            <input type="email" id="agenda-email" name="email" autocomplete="email" placeholder="Seu E-mail" required>
+          </div>
+        </div>
 
         <div class="form-linha">
-          <input type="date" id="agenda-data" name="data" required>
-          <input type="time" id="agenda-hora" name="hora" required>
+          <div>
+            <label for="agenda-data" class="rotulo-form">Data</label>
+            <input type="date" id="agenda-data" name="data" required>
+          </div>
+          <div>
+            <label for="agenda-hora" class="rotulo-form">Horário</label>
+            <input type="time" id="agenda-hora" name="horario" required>
+          </div>
+        </div>
+        
+        <div class="campo-form">
+          <label for="metodo_pagamento" class="rotulo-form rotulo-form--claro">Forma de Pagamento</label>
+          <select id="metodo_pagamento" name="metodo_pagamento" required class="select-pagamento">
+              <option value="local">Pagar na Barbearia (Dinheiro/Cartão)</option>
+              <option value="pix">Pagar Antecipado via PIX (Garante o horário)</option>
+          </select>
         </div>
 
         <button type="submit" id="btn-enviar-agenda">Confirmar Agendamento</button>
@@ -257,12 +306,12 @@
     <div class="container rodape-flex">
       
       <div class="rodape-logo">
-        <img src="imgagens/imagens/logo.png" alt="Logo Barbearia Estilo">
+        <img src="imagens/logo.png" alt="Barbearia Estilo">
       </div>
 
       <div class="rodape-endereco">
         <p><i class="fa-solid fa-location-dot"></i> Av. Principal, 1500 - Centro - São Paulo/SP</p>
-        <small>&copy; 2026 Barbearia Estilo. Todos os direitos reservados.</small>
+        <small>&copy; 2026 Barbearia Estilo. Todos os direitos reservados. | <a href="admin/login.html" class="link-rodape">Painel Admin</a></small>
       </div>
 
       <div class="rodape-sociais">
@@ -275,5 +324,16 @@
   </footer>
 
   <script src="menu.js"></script>
+
+  <!-- NOVO: registra o service worker, necessário para o navegador oferecer "Instalar app" -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('Service worker registrado com sucesso.'))
+          .catch((err) => console.warn('Falha ao registrar service worker:', err));
+      });
+    }
+  </script>
 </body>
 </html>

@@ -1,0 +1,26 @@
+{
+  "name": "Barbearia Estilo",
+  "short_name": "Bar. Estilo",
+  "description": "Agende seu corte na Barbearia Estilo direto pelo app.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "imagens/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "imagens/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Gerenciar Cortes - EstiloSaaS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-slate-900 text-white p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-amber-500 mb-8">EstiloSaaS</h1>
+                <nav class="space-y-3">
+                    <a href="relatorios.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                        📊 <span>Relatórios</span>
+                    </a>
+                    <a href="cortes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-500/10 text-amber-400 font-medium">
+                        💇‍♂️ <span>Gerenciar Cortes</span>
+                    </a>
+                    <a href="bot.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+    🤖 <span>Configurar Bot</span>
+</a>
+                </nav>
+            </div>
+            
+            <div class="flex flex-col gap-4">
+                <button id="btnLogout" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition text-sm font-medium">
+                    🚪 <span>Sair do Painel</span>
+                </button>
+                
+                <div class="text-xs text-slate-500 border-t border-slate-800 pt-4">Painel v2.0 BI • 2026</div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8">
+            <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Gerenciar Serviços e Cortes</h2>
+                    <p class="text-slate-500 text-sm mt-1">Cadastre e visualize os styles de corte oferecidos pela sua barbearia.</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-fit">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Adicionar Novo Corte</h3>
+                    <form id="formCorte" class="space-y-4">
+                        <input type="hidden" id="corteId" value="">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Nome do Corte</label>
+                            <input type="text" id="nome" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Ex: Degradê Americano">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Preço (R$)</label>
+                            <input type="number" step="any" id="preco" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Ex: 45.00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Descrição</label>
+                            <input type="text" id="descricao" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Ex: Laterais raspadas na zero...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">URL da Imagem (Para o Bot)</label>
+                            <input type="url" id="url_imagem" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="https://site.com/foto.jpg">
+                        </div>
+                        <button type="submit" id="btnSalvarCorte" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition shadow-md shadow-slate-900/10">
+                            ✨ Cadastrar Serviço
+                        </button>
+                        <button type="button" id="btnCancelarEdicao" class="hidden w-full bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl hover:bg-slate-300 transition">
+                            Cancelar edição
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Serviços Ativos</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-xs font-bold uppercase text-slate-400">
+                                    <th class="py-3 px-4">ID</th>
+                                    <th class="py-3 px-4">Nome</th>
+                                    <th class="py-3 px-4">Preço</th>
+                                    <th class="py-3 px-4">Descrição</th>
+                                    <th class="py-3 px-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaCortesBody" class="text-sm divide-y divide-slate-50 text-slate-600">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = "/api";
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.href = 'login.html';
+        });
+
+        function cabecalhosAutenticados() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        async function carregarCortes() {
+            try {
+                const response = await fetch(`${API_URL}/cortes`);
+
+                if (!response.ok) throw new Error('Falha ao carregar cortes');
+                const resultado = await response.json();
+                const cortes = resultado.dados || []; // CORRIGIDO: a API devolve { success, dados: [...] }, não um array puro
+                
+                const tbody = document.getElementById('tabelaCortesBody');
+                tbody.innerHTML = '';
+
+                if (cortes.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Nenhum corte cadastrado.</td></tr>`;
+                    return;
+                }
+
+                cortes.forEach(c => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="py-4 px-4 font-bold text-slate-400">#${c.id}</td>
+                            <td class="py-4 px-4 font-semibold text-slate-900">${c.nome}</td>
+                            <td class="py-4 px-4 text-emerald-600 font-bold">R$ ${parseFloat(c.preco).toFixed(2).replace('.', ',')}</td>
+                            <td class="py-4 px-4 text-slate-400 text-xs">${c.descricao || '-'}</td>
+                            <td class="py-4 px-4 text-right whitespace-nowrap">
+                                <button class="text-blue-600 hover:underline text-xs font-semibold mr-3" onclick='editarCorte(${JSON.stringify(c)})'>Editar</button>
+                                <button class="text-red-600 hover:underline text-xs font-semibold" onclick="excluirCorte(${c.id})">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar cortes:", error);
+            }
+        }
+
+        function editarCorte(corte) {
+            document.getElementById('corteId').value = corte.id;
+            document.getElementById('nome').value = corte.nome;
+            document.getElementById('preco').value = corte.preco;
+            document.getElementById('descricao').value = corte.descricao || '';
+            document.getElementById('url_imagem').value = corte.url_imagem || '';
+            document.getElementById('btnSalvarCorte').innerText = '💾 Salvar Alterações';
+            document.getElementById('btnCancelarEdicao').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetarFormulario() {
+            document.getElementById('formCorte').reset();
+            document.getElementById('corteId').value = '';
+            document.getElementById('btnSalvarCorte').innerText = '✨ Cadastrar Serviço';
+            document.getElementById('btnCancelarEdicao').classList.add('hidden');
+        }
+
+        document.getElementById('btnCancelarEdicao').addEventListener('click', resetarFormulario);
+
+        document.getElementById('formCorte').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const idExistente = document.getElementById('corteId').value;
+
+            const payload = {
+                nome: document.getElementById('nome').value,
+                preco: parseFloat(document.getElementById('preco').value),
+                descricao: document.getElementById('descricao').value,
+                url_imagem: document.getElementById('url_imagem').value
+            };
+            if (idExistente) payload.id = parseInt(idExistente);
+
+            try {
+                const response = await fetch(`${API_URL}/cortes`, {
+                    method: 'POST',
+                    headers: cabecalhosAutenticados(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('usuario');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const resultado = await response.json();
+
+                if (response.ok && resultado.success) {
+                    resetarFormulario();
+                    carregarCortes();
+                } else {
+                    alert("Erro: " + (resultado.message || "Não foi possível salvar o corte."));
+                }
+            } catch (error) {
+                console.error("Erro ao enviar corte:", error);
+                alert("Erro ao conectar com o servidor.");
+            }
+        });
+
+        async function excluirCorte(id) {
+            if (!confirm('Tem certeza que deseja excluir este corte?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/cortes/${id}`, {
+                    method: 'DELETE',
+                    headers: cabecalhosAutenticados()
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('usuario');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const resultado = await response.json();
+                if (response.ok && resultado.success) {
+                    carregarCortes();
+                } else {
+                    alert("Erro: " + (resultado.message || "Não foi possível excluir o corte."));
+                }
+            } catch (error) {
+                console.error("Erro ao excluir corte:", error);
+                alert("Erro ao conectar com o servidor.");
+            }
+        }
+
+        window.onload = carregarCortes;
+    </script>
+</body>
+</html>

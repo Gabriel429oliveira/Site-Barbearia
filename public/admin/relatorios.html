@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Painel Administrativo - Barbearia Estilo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 text-white p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-amber-500 mb-8">EstiloSaaS</h1>
+                <nav class="space-y-3">
+                    <a href="relatorios.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-500/10 text-amber-400 font-medium">
+                        📊 <span>Relatórios</span>
+                    </a>
+                    <a href="cortes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                        💇‍♂️ <span>Gerenciar Cortes</span>
+                    </a>
+                    <a href="bot.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                🤖 <span>Configurar Bot</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <button id="btnLogout" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition text-sm font-medium">
+                    🚪 <span>Sair do Painel</span>
+                </button>
+                <div class="text-xs text-slate-500 border-t border-slate-800 pt-4">Painel v2.0 BI • 2026</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Painel de Desempenho Avançado</h2>
+                    <p class="text-slate-500 text-sm mt-1">Métricas comerciais e inteligência de negócio em tempo real.</p>
+                </div>
+                <div>
+                    <span id="nomeUsuarioLogado" class="text-sm font-semibold text-slate-600 bg-slate-100 px-4 py-2 rounded-xl">
+                        Carregando usuário...
+                    </span>
+                </div>
+            </header>
+
+            <!-- Configurações do Assistente Virtual -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                <h4 class="text-lg font-bold text-slate-900 mb-2">Configurações do Assistente Virtual</h4>
+                <p class="text-slate-500 text-sm mb-4">Informações que o EstiloBot usa ao conversar com clientes no WhatsApp (localização, horário de funcionamento, avisos, etc). Deixe em branco para usar o comportamento padrão.</p>
+                <textarea
+                    id="mensagemBoasVindas"
+                    rows="3"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="Ex: Estamos localizados na Av. Principal, 1500. Funcionamento de terça a sábado, das 9h às 19h."
+                ></textarea>
+                <div class="flex items-center gap-3 mt-3">
+                    <button id="btnSalvarBoasVindas" class="bg-slate-900 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-slate-800 transition text-sm">
+                        Salvar
+                    </button>
+                    <span id="statusSalvarBoasVindas" class="text-sm text-emerald-600 hidden">Salvo com sucesso!</span>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-amber-500 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Clientes</p>
+                        <h3 id="cardClientes" class="text-3xl font-black text-slate-900 mt-1">0</h3>
+                    </div>
+                    <div class="p-3 bg-amber-50 text-amber-500 rounded-xl text-xl">👥</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-emerald-500 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Faturamento</p>
+                        <h3 id="cardFaturamento" class="text-2xl font-black text-slate-900 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="p-3 bg-emerald-50 text-emerald-500 rounded-xl text-xl">💰</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-blue-500 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Ticket Médio</p>
+                        <h3 id="cardTicketMedio" class="text-2xl font-black text-slate-900 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="p-3 bg-blue-50 text-blue-500 rounded-xl text-xl">📈</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-purple-500 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Taxa Retenção</p>
+                        <h3 id="cardRetencao" class="text-2xl font-black text-slate-900 mt-1">0%</h3>
+                    </div>
+                    <div class="p-3 bg-purple-50 text-purple-500 rounded-xl text-xl">🔁</div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4 self-start">Status dos Agendamentos</h4>
+                    <div class="w-full h-64 relative flex justify-center items-center">
+                        <canvas id="graficoCortes"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">Volume de Agendamentos Recentes</h4>
+                    <div class="w-full h-64">
+                        <canvas id="graficoLinha"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h4 class="text-lg font-bold text-slate-900 mb-4">Agendamentos Registrados</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-100 text-xs font-bold uppercase text-slate-400">
+                                <th class="py-3 px-6">ID</th>
+                                <th class="py-3 px-6">Data e Hora</th>
+                                <th class="py-3 px-6 text-center">Valor</th>
+                                <th class="py-3 px-6 text-center">Pagamento</th>
+                                <th class="py-3 px-6 text-center">Status Pagamento</th>
+                                <th class="py-3 px-6 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaRanking" class="text-sm divide-y divide-slate-50 text-slate-600">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            const API_BASE_URL = '';
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const usuarioStorage = localStorage.getItem('usuario');
+            if (usuarioStorage) {
+                try {
+                    const userObj = JSON.parse(usuarioStorage);
+                    document.getElementById('nomeUsuarioLogado').innerText = `👤 ${userObj.usuario}`;
+                } catch (e) {
+                    document.getElementById('nomeUsuarioLogado').innerText = '👤 Administrador';
+                }
+            }
+
+            document.getElementById('btnLogout').addEventListener('click', () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('usuario');
+                window.location.href = 'login.html';
+            });
+
+            let graficoCortesInstancia = null;
+            let graficoLinhaInstancia = null;
+
+            const formatarMoeda = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+
+            async function carregarDadosRelatorio() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/relatorios`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('usuario');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const resultado = await response.json();
+                    if (!resultado.success) {
+                        alert("Erro: " + (resultado.message || 'Falha ao carregar dados.'));
+                        return;
+                    }
+
+                    const dados = resultado.dados;
+
+                    document.getElementById('cardClientes').innerText = dados.totalClientes;
+                    document.getElementById('cardFaturamento').innerText = formatarMoeda(dados.faturamentoTotal);
+                    document.getElementById('cardTicketMedio').innerText = formatarMoeda(dados.ticketMedio);
+                    document.getElementById('cardRetencao').innerText = `${dados.taxaRetencao}%`;
+
+                    const tabelaBody = document.getElementById('tabelaRanking');
+                    tabelaBody.innerHTML = '';
+
+                    const agendamentos = dados.agendamentos || [];
+
+                    if (agendamentos.length === 0) {
+                        tabelaBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="py-4 text-center text-slate-400">Nenhum agendamento encontrado para esta barbearia.</td>
+                            </tr>
+                        `;
+                    } else {
+                        agendamentos.forEach(ag => {
+                            const dataFormatada = new Date(ag.data_hora).toLocaleString('pt-BR');
+                            const valorFormatado = formatarMoeda(ag.valor);
+                            const pagamentoPendente = ag.metodo_pagamento === 'pix' && ag.status_pagamento !== 'pago';
+
+                            const celulaPagamento = pagamentoPendente
+                                ? `<button class="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg transition" onclick="confirmarPagamento(${ag.id}, this)">Confirmar PIX</button>`
+                                : `<span class="px-3 py-1 rounded-full text-xs font-bold ${ag.status_pagamento === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ag.status_pagamento || '-'}</span>`;
+
+                            tabelaBody.innerHTML += `
+                                <tr class="hover:bg-slate-50/80 transition">
+                                    <td class="py-4 px-6 font-semibold text-slate-900">#${ag.id}</td>
+                                    <td class="py-4 px-6">${dataFormatada}</td>
+                                    <td class="py-4 px-6 text-center font-bold text-amber-600">${valorFormatado}</td>
+                                    <td class="py-4 px-6 text-center uppercase text-xs font-bold text-slate-500">${ag.metodo_pagamento || 'local'}</td>
+                                    <td class="py-4 px-6 text-center">${celulaPagamento}</td>
+                                    <td class="py-4 px-6 text-center">
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold ${ag.status === 'concluido' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                            ${ag.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    const pendentes = agendamentos.filter(a => a.status === 'pendente').length;
+                    const concluidos = agendamentos.filter(a => a.status === 'concluido').length;
+
+                    const ctxCortes = document.getElementById('graficoCortes').getContext('2d');
+                    if (graficoCortesInstancia) graficoCortesInstancia.destroy();
+
+                    graficoCortesInstancia = new Chart(ctxCortes, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Concluídos', 'Pendentes'],
+                            datasets: [{
+                                data: [concluidos, pendentes],
+                                backgroundColor: ['#10b981', '#f59e0b']
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                    const ctxLinha = document.getElementById('graficoLinha').getContext('2d');
+                    if (graficoLinhaInstancia) graficoLinhaInstancia.destroy();
+
+                    const agendamentosOrdenados = [...agendamentos].reverse().slice(-10);
+                    const labelsAgendamentos = agendamentosOrdenados.map(a => new Date(a.data_hora).toLocaleDateString('pt-BR'));
+                    const valoresAgendamentos = agendamentosOrdenados.map(a => parseFloat(a.valor || 0));
+
+                    graficoLinhaInstancia = new Chart(ctxLinha, {
+                        type: 'line',
+                        data: {
+                            labels: labelsAgendamentos.length > 0 ? labelsAgendamentos : ['Sem dados'],
+                            datasets: [{
+                                label: 'Valor por Agendamento (R$)',
+                                data: valoresAgendamentos.length > 0 ? valoresAgendamentos : [0],
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+
+                } catch (error) {
+                    console.error("Erro ao atualizar o painel:", error);
+                }
+            }
+
+            async function carregarConfiguracoes() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/empresa/configuracoes`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.status === 401 || response.status === 403) return;
+                    const resultado = await response.json();
+                    if (resultado.success) {
+                        document.getElementById('mensagemBoasVindas').value = resultado.mensagem_boas_vindas || '';
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar configurações:', error);
+                }
+            }
+
+            document.getElementById('btnSalvarBoasVindas').addEventListener('click', async () => {
+                const btn = document.getElementById('btnSalvarBoasVindas');
+                const status = document.getElementById('statusSalvarBoasVindas');
+                const texto = document.getElementById('mensagemBoasVindas').value;
+
+                btn.disabled = true;
+                btn.innerText = 'Salvando...';
+                status.classList.add('hidden');
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/empresa/boas-vindas`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ mensagem_boas_vindas: texto })
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('usuario');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const resultado = await response.json();
+                    if (resultado.success) {
+                        status.classList.remove('hidden');
+                        setTimeout(() => status.classList.add('hidden'), 3000);
+                    } else {
+                        alert('Erro: ' + (resultado.message || 'Não foi possível salvar.'));
+                    }
+                } catch (error) {
+                    console.error('Erro ao salvar:', error);
+                    alert('Erro ao conectar com o servidor.');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = 'Salvar';
+                }
+            });
+
+            window.confirmarPagamento = async function(agendamentoId, botao) {
+                if (!confirm('Confirmar que este pagamento PIX foi recebido?')) return;
+
+                botao.disabled = true;
+                botao.innerText = 'Confirmando...';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/agendamentos/${agendamentoId}/pagamento`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('usuario');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const resultado = await response.json();
+                    if (resultado.success) {
+                        carregarDadosRelatorio();
+                    } else {
+                        alert('Erro: ' + (resultado.message || 'Não foi possível confirmar o pagamento.'));
+                        botao.disabled = false;
+                        botao.innerText = 'Confirmar PIX';
+                    }
+                } catch (error) {
+                    console.error('Erro ao confirmar pagamento:', error);
+                    alert('Erro ao conectar com o servidor.');
+                    botao.disabled = false;
+                    botao.innerText = 'Confirmar PIX';
+                }
+            };
+
+            window.onload = () => {
+                carregarDadosRelatorio();
+                carregarConfiguracoes();
+            };
+        })();
+    </script>
+</body>
+</html>
